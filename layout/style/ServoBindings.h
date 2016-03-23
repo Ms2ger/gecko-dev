@@ -76,10 +76,17 @@ void Servo_DropStyleSet(RawServoStyleSet* set);
 //
 // These won't ever land in mozilla-central, as we'll replace them
 // with atom-based APIs instead.
-const char* Gecko_GetAttrAsUTF8(RawGeckoElement* element, const uint8_t* ns,
-                                const uint8_t* name, uint32_t* length);
+const char* Gecko_GetAttrAsUTF8(RawGeckoElement* element, nsIAtom* aNS, nsIAtom* aName, uint32_t* length);
 const uint16_t* Gecko_LocalName(RawGeckoElement* element, uint32_t* length);
 const uint16_t* Gecko_Namespace(RawGeckoElement* element, uint32_t* length);
+
+
+nsIAtom* Gecko_NewAtom(const char* aString, uint32_t aLength);
+uint32_t Gecko_Atom_GetHash(nsIAtom* aAtom);
+void Gecko_AddRefAtom(nsIAtom* aAtom);
+void Gecko_ReleaseAtom(nsIAtom* aAtom);
+const uint16_t* Gecko_Atom_GetUTF16String(nsIAtom* aAtom, uint32_t* aLength);
+
 
 // Servo API.
 void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);

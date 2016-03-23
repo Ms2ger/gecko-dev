@@ -150,10 +150,10 @@ Gecko_SetNodeData(RawGeckoNode* aNode, ServoNodeData* aData)
 }
 
 const char*
-Gecko_GetAttrAsUTF8(RawGeckoElement* aElement, const uint8_t* aNS, const uint8_t* aName, uint32_t* aLength)
+Gecko_GetAttrAsUTF8(RawGeckoElement* aElement, nsIAtom* aNS, nsIAtom* aName, uint32_t* aLength)
 {
-  MOZ_ASSERT(aNS[0] == '\0', "Can't handle namespaces yet");
-  const nsAttrValue* val = aElement->GetParsedAttr(NS_ConvertUTF8toUTF16(nsDependentCString(reinterpret_cast<const char*>(aName))));
+  MOZ_ASSERT(aNS == nsGkAtoms::_empty, "Can't handle namespaces yet");
+  const nsAttrValue* val = aElement->GetParsedAttr(aName);
   if (!val) {
     return nullptr;
   }
@@ -177,6 +177,41 @@ Gecko_Namespace(RawGeckoElement* aElement, uint32_t* aLength)
   const nsString& str = manager->NameSpaceURIRef(aElement->NodeInfo()->NamespaceID());
   *aLength = str.Length();
   return reinterpret_cast<const uint16_t*>(str.get());
+}
+
+nsIAtom*
+Gecko_NewAtom(const char* aString, uint32_t aLength)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  return NS_NewAtom(nsDependentCString(aString, aLength)).take();
+}
+
+uint32_t
+Gecko_Atom_GetHash(nsIAtom* aAtom)
+{
+  return aAtom->hash();
+}
+
+void
+Gecko_AddRefAtom(nsIAtom* aAtom)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  NS_ADDREF(aAtom);
+}
+
+void
+Gecko_ReleaseAtom(nsIAtom* aAtom)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  NS_RELEASE(aAtom);
+}
+
+const uint16_t*
+Gecko_Atom_GetUTF16String(nsIAtom* aAtom, uint32_t* aLength)
+{
+  static_assert(sizeof(char16_t) == sizeof(uint16_t), "Servo doesn't know what a char16_t is");
+  *aLength = aAtom->GetLength();
+  return reinterpret_cast<const uint16_t*>(aAtom->GetUTF16String());
 }
 
 #ifndef MOZ_STYLO
