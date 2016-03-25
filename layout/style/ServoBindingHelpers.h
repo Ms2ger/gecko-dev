@@ -20,7 +20,7 @@ struct RefPtrTraits<RawServoStyleSheet>
     MOZ_CRASH("stylo: not implemented");
   }
   static void Release(RawServoStyleSheet* aPtr) {
-    Servo_ReleaseStylesheet(aPtr);
+    Servo_ReleaseStyleSheet(aPtr);
   }
 };
 

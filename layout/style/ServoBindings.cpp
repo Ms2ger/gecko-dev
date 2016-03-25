@@ -195,7 +195,7 @@ Servo_StylesheetFromUTF8Bytes(const uint8_t* bytes, uint32_t length)
 }
 
 void
-Servo_ReleaseStylesheet(RawServoStyleSheet* sheet)
+Servo_ReleaseStyleSheet(RawServoStyleSheet* sheet)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_ReleaseStylesheet in a "
             "non-MOZ_STYLO build");

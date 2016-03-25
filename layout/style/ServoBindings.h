@@ -64,7 +64,7 @@ void Servo_DropNodeData(ServoNodeData* data);
 // TODO: Make these return already_AddRefed and UniquePtr when the binding
 // generator is smart enough to handle them.
 RawServoStyleSheet* Servo_StylesheetFromUTF8Bytes(const uint8_t* bytes, uint32_t length);
-void Servo_ReleaseStylesheet(RawServoStyleSheet* sheet);
+void Servo_ReleaseStyleSheet(RawServoStyleSheet* sheet);
 void Servo_AppendStyleSheet(RawServoStyleSheet* sheet, RawServoStyleSet* set);
 void Servo_PrependStyleSheet(RawServoStyleSheet* sheet, RawServoStyleSet* set);
 void Servo_RemoveStyleSheet(RawServoStyleSheet* sheet, RawServoStyleSet* set);
