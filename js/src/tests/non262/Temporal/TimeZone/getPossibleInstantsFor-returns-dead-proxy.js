@@ -1,3 +1,5 @@
+// Copyright (C) 2017 Mozilla Corporation. All rights reserved.
+// This code is governed by the BSD license found in the LICENSE file.
 // |reftest| skip-if(!this.hasOwnProperty("Temporal")||!xulRuntime.shell)
 
 var g = newGlobal({newCompartment: true});
