@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Adapted from https://github.com/tc39/test262/blob/main/tools/generation/test/run.py
 
 import contextlib
@@ -31,7 +31,7 @@ class TestExport(unittest.TestCase):
 
     def exportScript(self):
         relpath = os.path.relpath(os.path.join(testDir, "fixtures", "export"))
-        sp = subprocess.Popen(["python3", "test262-export.py", relpath, "--out", OUT_DIR],
+        sp = subprocess.Popen([ex, relpath, "--out", OUT_DIR],
                               stdout=subprocess.PIPE,
                               cwd=os.path.join(testDir, ".."))
         stdout, stderr = sp.communicate()
@@ -97,12 +97,10 @@ class TestExport(unittest.TestCase):
 
     def compareTrees(self, targetName):
         expectedPath = os.path.join(EXPECTED_DIR, targetName)
-        actualPath = os.path.join(OUT_DIR, "tests", "export")
+        actualPath = os.path.join(OUT_DIR, "tests", targetName)
 
         expectedFiles = self.getFiles(expectedPath)
-        print(f"expectedFiles [{expectedPath}] = {expectedFiles}")
         actualFiles = self.getFiles(actualPath)
-        print(f"actualFiles [{actualPath}] = {actualFiles}")
 
         self.assertListEqual(
             [os.path.relpath(x, expectedPath) for x in expectedFiles],
@@ -124,14 +122,10 @@ class TestExport(unittest.TestCase):
         self.assertMultiLineEqual(output, expected)
 
     def tearDown(self):
-        if False: shutil.rmtree(OUT_DIR, ignore_errors=True)
+        shutil.rmtree(OUT_DIR, ignore_errors=True)
 
     def test_export(self):
         result = self.exportScript()
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-        print(result["stderr"])
-        print(result["stdout"].decode("utf-8"))
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         self.assertEqual(result["returncode"], 0)
         self.compareTrees("export")
 

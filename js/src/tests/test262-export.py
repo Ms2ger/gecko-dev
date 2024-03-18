@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -58,7 +58,6 @@ def convertReportCompare(source: bytes) -> bytes:
     def replaceFn(matchobj: "re.Match[bytes]") -> bytes:
         actual: bytes = matchobj.group(2)
         expected: bytes = matchobj.group(3)
-        print(f"replaceFn {actual} {expected}")
 
         if actual == expected and actual in [b"0", b"true", b"null"]:
             return b""
@@ -83,7 +82,7 @@ class ReftestEntry:
         self.module: bool = module
         self.info: Optional[str] = info
 
-def fetchReftestEntries(reftest: bytes) -> ReftestEntry:
+def fetchReftestEntries(reftest: str) -> ReftestEntry:
     """
     Collects and stores the entries from the reftest header.
     """
@@ -96,37 +95,35 @@ def fetchReftestEntries(reftest: bytes) -> ReftestEntry:
     module: bool = False
 
     # should capture conditions to skip
-    matchesSkip = re.search(br"skip-if\((.*)\)", reftest)
+    matchesSkip = re.search(r"skip-if\((.*)\)", reftest)
     if matchesSkip:
-        matches = matchesSkip.group(1).split(b"||")
+        matches = matchesSkip.group(1).split("||")
         for match in matches:
             # captures a features list
             dependsOnProp = re.search(
-                br"!this.hasOwnProperty\([\'\"](.*?)[\'\"]\)", match
+                r"!this.hasOwnProperty\([\'\"](.*?)[\'\"]\)", match
             )
             if dependsOnProp:
-                print(f"feature: {dependsOnProp.group(1)}")
-                features.append(dependsOnProp.group(1).decode("utf-8"))
+                features.append(dependsOnProp.group(1))
             else:
                 print("# Can't parse the following skip-if rule: %s" % match)
 
     # should capture the expected error
-    matchesError = re.search(br"error:\s*(\w*)", reftest)
-    print(f"matchesError = {matchesError}")
+    matchesError = re.search(r"error:\s*(\w*)", reftest)
     if matchesError:
         # The metadata from the reftests won't say if it's a runtime or an
         # early error. This specification is required for the frontmatter tags.
-        error = matchesError.group(1).decode("utf-8")
+        error = matchesError.group(1)
 
     # just tells if it's a module
-    matchesModule = re.search(br"\bmodule\b", reftest)
+    matchesModule = re.search(r"\bmodule\b", reftest)
     if matchesModule:
         module = True
 
     # captures any comments
-    matchesComments = re.search(br" -- (.*)", reftest)
+    matchesComments = re.search(r" -- (.*)", reftest)
     if matchesComments:
-        comments = matchesComments.group(1).decode("utf-8")
+        comments = matchesComments.group(1)
 
     return ReftestEntry(features=features, error=error, module=module, info=comments)
 
@@ -142,18 +139,16 @@ def parseHeader(source: bytes) -> "tuple[bytes, Optional[ReftestEntry]]":
         return (source, None)
 
     # Extract the token.
-    part, _, _ = source.partition(b"\n")
-    #pat = TEST_HEADER_PATTERN_INLINE.pattern.encode("ascii")
-    #print(pat)
+    part, _, rest = source.partition(b"\n")
     part = part.decode("utf-8")
     matches = TEST_HEADER_PATTERN_INLINE.match(part)
 
     if matches and matches.group(0):
-        reftest = matches.group(0).encode("utf-8")
+        reftest = matches.group(0)
 
         # Remove the found header from the source;
         # Fetch and return the reftest entries
-        return (source.replace(reftest + b"\n", b""), fetchReftestEntries(reftest))
+        return (rest, fetchReftestEntries(reftest))
 
     return (source, None)
 
@@ -216,7 +211,6 @@ def cleanupMeta(meta: "dict[str, Any]") -> "dict[str, Any]":
         if tag in meta:
             # We need the list back for the yaml dump
             meta[tag] = list(set(meta[tag]))
-            print(f"meta[{tag}] = {meta[tag]}")
 
     if "negative" in meta:
         # If the negative tag exists, phase needs to be present and set
@@ -232,8 +226,6 @@ def cleanupMeta(meta: "dict[str, Any]") -> "dict[str, Any]":
                 "Warning: the negative.type is not set.\n"
                 + "Ref https://github.com/tc39/test262/blob/main/INTERPRETING.md#negative"
             )
-        else:
-            print('meta["negative"]["type"]', meta["negative"]["type"], type(meta["negative"]["type"]))
 
     return meta
 
@@ -266,7 +258,6 @@ def mergeMeta(reftest: "Optional[ReftestEntry]", frontmatter: "dict[str, Any]",
     # Set the negative flags
     if reftest and reftest.error:
         error = reftest.error
-        print(f"reftest.error = {reftest.error}")
         if "negative" not in frontmatter:
             frontmatter["negative"] = {
                 # This code is assuming error tags are early errors, but they
@@ -323,7 +314,6 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
     lines.append(b"/*---")
 
     for key, value in frontmatter.items():
-        print(key, value, type(key), type(value))
         if key in ("description", "info"):
             lines.append(b"%s: |" % key.encode("ascii"))
             lines.append(
@@ -341,7 +331,6 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
                     {key: value}, encoding="utf8", default_flow_style=False
                 ).strip()
             )
-            print(lines[-1])
 
     lines.append(b"---*/")
 
@@ -402,7 +391,6 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
 
     # Go through each source path
     for providedSrc in providedSrcs:
-        print(f"======================================= {providedSrc}")
         src = os.path.abspath(providedSrc)
         if not os.path.isdir(src):
             print(f"Did not find directory {src}")
@@ -428,7 +416,6 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
                 os.makedirs(currentOutDir)
 
             for fileName in fileNames:
-                print(f"--------------------------------- {fileName}")
                 # Skip browser.js files
                 if fileName == "browser.js" or fileName == "shell.js":
                     continue
@@ -464,7 +451,6 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
 
 if __name__ == "__main__":
     import argparse
-    print(sys.argv)
     # This script must be run from js/src/tests to work correctly.
     if "/".join(os.path.normpath(os.getcwd()).split(os.sep)[-3:]) != "js/src/tests":
         raise RuntimeError("%s must be run from js/src/tests" % sys.argv[0])
