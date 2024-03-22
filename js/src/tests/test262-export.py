@@ -70,8 +70,7 @@ def convertReportCompare(source: bytes) -> bytes:
         source,
     )
 
-    newSource = re.sub(br"\breportCompare\b", b"assert.sameValue", newSource)
-    return newSource
+    return re.sub(br"\breportCompare\b", b"assert.sameValue", newSource)
 
 
 class ReftestEntry:
@@ -214,7 +213,6 @@ def cleanupMeta(meta: "dict[str, Any]") -> "dict[str, Any]":
 
     if "negative" in meta:
         # If the negative tag exists, phase needs to be present and set
-        print(f'meta["negative"] = {meta["negative"]}')
         if meta["negative"].get("phase") not in ("early", "runtime"):
             print(
                 "Warning: the negative.phase is not properly set.\n"
@@ -239,15 +237,21 @@ def mergeMeta(reftest: "Optional[ReftestEntry]", frontmatter: "dict[str, Any]",
 
     # Merge the meta from reftest to the frontmatter
 
-    if reftest:
-        frontmatter.setdefault("features", []).extend(reftest.features)
+    # Add the shell specific includes
+    if includes:
+        frontmatter["includes"] = list(includes)
+
+    if not reftest:
+        return frontmatter
+
+    frontmatter.setdefault("features", []).extend(reftest.features)
 
     # Only add the module flag if the value from reftest is truish
-    if reftest and reftest.module:
+    if reftest.module:
         frontmatter.setdefault("flags", []).append("module")
 
     # Add any comments to the info tag
-    if reftest and reftest.info:
+    if reftest.info:
         info = reftest.info
         # Open some space in an existing info text
         if "info" in frontmatter:
@@ -256,7 +260,7 @@ def mergeMeta(reftest: "Optional[ReftestEntry]", frontmatter: "dict[str, Any]",
             frontmatter["info"] = info
 
     # Set the negative flags
-    if reftest and reftest.error:
+    if reftest.error:
         error = reftest.error
         if "negative" not in frontmatter:
             frontmatter["negative"] = {
@@ -275,10 +279,6 @@ def mergeMeta(reftest: "Optional[ReftestEntry]", frontmatter: "dict[str, Any]",
                 + "frontmatter error. %s != %s"
                 % (error, frontmatter["negative"]["type"])
             )
-
-    # Add the shell specific includes
-    if includes:
-        frontmatter["includes"] = list(includes)
 
     return frontmatter
 
@@ -442,7 +442,6 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
 
                 newSource = convertTestFile(testSource, includes)
 
-                print(f"   Generating {os.path.join(currentOutDir, fileName)}")
                 with open(os.path.join(currentOutDir, fileName), "wb") as output:
                     output.write(newSource)
 
@@ -451,6 +450,7 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
 
 if __name__ == "__main__":
     import argparse
+
     # This script must be run from js/src/tests to work correctly.
     if "/".join(os.path.normpath(os.getcwd()).split(os.sep)[-3:]) != "js/src/tests":
         raise RuntimeError("%s must be run from js/src/tests" % sys.argv[0])
