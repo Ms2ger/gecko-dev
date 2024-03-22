@@ -392,10 +392,8 @@ def exportTest262(outDir: str, providedSrcs: "list[str]", includeShell: bool, ba
     # Go through each source path
     for providedSrc in providedSrcs:
         src = os.path.abspath(providedSrc)
-        print(f"Looking for directory {src} (from {providedSrc})")
-        print()
         if not os.path.isdir(src):
-            print(f"Did not find directory {src} (from {providedSrc})")
+            print(f"Did not find directory {src}")
         # the basename of the path will be used in case multiple "src" arguments
         # are passed in to create an output directory for each "src".
         basename = os.path.basename(src)
