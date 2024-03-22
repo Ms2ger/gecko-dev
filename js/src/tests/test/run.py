@@ -10,6 +10,8 @@ import unittest
 
 from mozunit import main
 
+print(__file__)
+
 testDir = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.abspath(os.path.join(testDir, "..", "out"))
 EXPECTED_DIR = os.path.join(testDir, "expected")
@@ -31,7 +33,12 @@ class TestExport(unittest.TestCase):
     maxDiff = None
 
     def exportScript(self):
+        print(__file__)
         abspath = os.path.abspath(os.path.join(testDir, "fixtures", "export"))
+        print(f"ex = {ex}")
+        print(f"abs ex = {os.path.abspath(ex)}")
+        print(f"abspath = {abspath}")
+        print(f"OUT_DIR = {OUT_DIR}")
         sp = subprocess.Popen([os.path.abspath(ex), abspath, "--out", OUT_DIR],
                               stdout=subprocess.PIPE,
                               cwd=os.path.join(testDir, ".."))
@@ -98,7 +105,10 @@ class TestExport(unittest.TestCase):
 
     def compareTrees(self, targetName):
         expectedPath = os.path.join(EXPECTED_DIR, targetName)
+        print(f"expectedPath = {expectedPath}")
+        print(f"OUT_DIR = {OUT_DIR}")
         actualPath = os.path.join(OUT_DIR, "tests", targetName)
+        print(f"actualPath = {actualPath}")
 
         expectedFiles = self.getFiles(expectedPath)
         actualFiles = self.getFiles(actualPath)
@@ -124,9 +134,16 @@ class TestExport(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(OUT_DIR, ignore_errors=True)
+        pass
 
     def test_export(self):
         result = self.exportScript()
+        print("===============stdout==================")
+        print(result["stdout"])
+        print("===============stdout==================")
+        print("===============stderr==================")
+        print(result["stderr"])
+        print("===============stderr==================")
         self.assertEqual(result["returncode"], 0)
         self.compareTrees("export")
 
