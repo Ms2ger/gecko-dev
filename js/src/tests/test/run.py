@@ -8,9 +8,10 @@ import subprocess
 import tempfile
 import unittest
 
-testDir = os.path.dirname(os.path.relpath(__file__))
-assert testDir == "test"
-OUT_DIR = os.path.join(testDir, "out")
+from mozunit import main
+
+testDir = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.abspath(os.path.join(testDir, "..", "out"))
 EXPECTED_DIR = os.path.join(testDir, "expected")
 ex = os.path.join(testDir, "..", "test262-export.py")
 importExec = os.path.join(testDir, "..", "test262-update.py")
@@ -30,8 +31,8 @@ class TestExport(unittest.TestCase):
     maxDiff = None
 
     def exportScript(self):
-        relpath = os.path.relpath(os.path.join(testDir, "fixtures", "export"))
-        sp = subprocess.Popen([ex, relpath, "--out", OUT_DIR],
+        abspath = os.path.abspath(os.path.join(testDir, "fixtures", "export"))
+        sp = subprocess.Popen([os.path.abspath(ex), abspath, "--out", OUT_DIR],
                               stdout=subprocess.PIPE,
                               cwd=os.path.join(testDir, ".."))
         stdout, stderr = sp.communicate()
@@ -139,4 +140,4 @@ class TestExport(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
