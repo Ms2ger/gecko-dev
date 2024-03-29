@@ -132,6 +132,9 @@ class TestExport(unittest.TestCase):
         self.assertEqual(result["returncode"], 0)
         self.compareTrees("export")
 
+    def test_failure(self):
+        raise Exception("This should fail")
+
     # def test_import_local(self):
     #     output, returncode, folder = self.importLocal()
     #     self.assertEqual(returncode, 0)
