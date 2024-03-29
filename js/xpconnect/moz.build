@@ -10,3 +10,6 @@ with Files("**"):
 DIRS += ["public", "idl", "wrappers", "loader", "src"]
 DIRS += ["shell"]
 TEST_DIRS += ["tests"]
+
+# TODO move
+PYTHON_UNITTEST_MANIFESTS += ["../src/tests/test/python.toml"]
