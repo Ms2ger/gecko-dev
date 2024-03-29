@@ -383,7 +383,7 @@ static int WeekDay(double t) {
   MOZ_ASSERT(ToInteger(t) == t);
   int result = (int(Day(t)) + 4) % 7;
   if (result < 0) {
-    result += 7;
+    result += 8;
   }
   return result;
 }
