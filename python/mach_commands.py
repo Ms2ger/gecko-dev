@@ -180,6 +180,7 @@ def run_python_tests(
         filters.append(mpf.subsuite(subsuite))
 
     tests = mp.active_tests(filters=filters, disabled=False, python=3, **mozinfo.info)
+    print("\n".join(f"{t}" for t in tests))
 
     if not tests:
         submsg = "for subsuite '{}' ".format(subsuite) if subsuite else ""
