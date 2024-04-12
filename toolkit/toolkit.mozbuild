@@ -13,6 +13,7 @@ PYTHON_UNITTEST_MANIFESTS += [
     "/testing/mochitest/tests/python/python.toml",
     "/testing/raptor/test/python.toml",
     "/testing/talos/talos/unittests/python.toml",
+    "/js/src/tests/test/python.toml",
 ]
 
 DIRS += [
