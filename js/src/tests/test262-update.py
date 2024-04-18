@@ -599,7 +599,7 @@ def fetch_local_changes(inDir, outDir, srcDir, strictTests):
     # Captures the branch name to be used on the output
     branchName = subprocess.check_output(
         ("git -C %s rev-parse --abbrev-ref HEAD" % srcDir).split(" ")
-    ).split("\n")[0]
+    ).split(b"\n")[0]
 
     # Fetches the file names to import
     files = subprocess.check_output(
@@ -626,21 +626,26 @@ def fetch_local_changes(inDir, outDir, srcDir, strictTests):
     )
 
     # Print some friendly output
-    print("From the branch %s in %s \n" % (branchName, srcDir))
-    print("Files being copied to the local folder: \n%s" % files)
+    print("From the branch %s in %s \n" % (branchName.decode("utf-8"), srcDir))
+    print("Files being copied to the local folder: \n%s" % files.decode("utf-8"))
     if deletedFiles:
         print(
-            "Deleted files (use this list to update the skip list): \n%s" % deletedFiles
+            "Deleted files (use this list to update the skip list): \n%s"
+            % deletedFiles.decode("utf-8")
         )
     if modifiedFiles:
         print(
             "Modified files (use this list to update the skip list): \n%s"
-            % modifiedFiles
+            % modifiedFiles.decode("utf-8")
         )
     if renamedFiles:
-        print("Renamed files (already added with the new names): \n%s" % renamedFiles)
+        print(
+            "Renamed files (already added with the new names): \n%s"
+            % renamedFiles.decode("utf-8")
+        )
 
-    for f in files.splitlines():
+    for rawf in files.splitlines():
+        f = rawf.decode("utf-8")
         # Capture the subdirectories names to recreate the file tree
         # TODO: join the file tree with -- instead of multiple subfolders?
         fileTree = os.path.join(inDir, os.path.dirname(f))
@@ -657,7 +662,7 @@ def fetch_local_changes(inDir, outDir, srcDir, strictTests):
     shutil.copytree(os.path.join(srcDir, "harness"), os.path.join(inDir, "harness"))
 
     # Reset any older directory in the output using the same branch name
-    outDir = os.path.join(outDir, "local", branchName)
+    outDir = os.path.join(outDir, "local", branchName.decode("utf-8"))
     if os.path.isdir(outDir):
         shutil.rmtree(outDir)
     os.makedirs(outDir)
