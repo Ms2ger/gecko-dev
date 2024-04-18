@@ -14,6 +14,7 @@ import tempfile
 from functools import partial
 from itertools import chain
 from operator import itemgetter
+from typing import Any, Optional
 
 # Skip all tests which use features not supported in SpiderMonkey.
 UNSUPPORTED_FEATURES = set(
@@ -66,7 +67,7 @@ def TemporaryDirectory():
         shutil.rmtree(tmpDir)
 
 
-def loadTest262Parser(test262Dir):
+def loadTest262Parser(test262Dir: str):
     """
     Loads the test262 test record parser.
     """
@@ -260,7 +261,7 @@ def pathStartsWith(path, *args):
     return os.path.commonprefix([path, prefix]) == prefix
 
 
-def convertTestFile(test262parser, testSource, testName, includeSet, strictTests):
+def convertTestFile(test262parser: Any, testSource: bytes, testName: str, includeSet: "set[Any]", strictTests: bool):
     """
     Convert a test262 test to a compatible jstests test file.
     """
@@ -271,8 +272,8 @@ def convertTestFile(test262parser, testSource, testName, includeSet, strictTests
 
     # jsreftest meta data
     refTestOptions = []
-    refTestSkip = []
-    refTestSkipIf = []
+    refTestSkip: list[str] = []
+    refTestSkipIf: list[tuple[str, str]] = []
 
     # Skip all files which contain YAML errors.
     if testRec is None:
@@ -457,11 +458,11 @@ def convertFixtureFile(fixtureSource, fixtureName):
     yield (fixtureName, source, externRefTest)
 
 
-def process_test262(test262Dir, test262OutDir, strictTests, externManifests):
+def process_test262(test262Dir: str, test262OutDir: str, strictTests: bool, externManifests: "list[Any]"):
     """
     Process all test262 files and converts them into jstests compatible tests.
     """
-
+    #print(f"process_test262({test262Dir}, {test262OutDir}, {strictTests}, {externManifests})")
     harnessDir = os.path.join(test262Dir, "harness")
     testDir = os.path.join(test262Dir, "test")
     test262parser = loadTest262Parser(test262Dir)
@@ -491,7 +492,7 @@ def process_test262(test262Dir, test262OutDir, strictTests, externManifests):
 
     # Additional explicit includes inserted at well-chosen locations to reduce
     # code duplication in shell.js files.
-    explicitIncludes = {}
+    explicitIncludes: dict[str, list[str]] = {}
     explicitIncludes[os.path.join("built-ins", "Atomics")] = [
         "testAtomics.js",
         "testTypedArray.js",
@@ -572,7 +573,7 @@ def process_test262(test262Dir, test262OutDir, strictTests, externManifests):
         )
 
 
-def fetch_local_changes(inDir, outDir, srcDir, strictTests):
+def fetch_local_changes(inDir: str, outDir: str, srcDir: str, strictTests: bool):
     """
     Fetch the changes from a local clone of Test262.
 
@@ -780,8 +781,9 @@ def fetch_pr_files(inDir, outDir, prNumber, strictTests):
     process_test262(inDir, prTestsOutDir, strictTests, [])
 
 
-def general_update(inDir, outDir, strictTests):
+def general_update(inDir: str, outDir: str, strictTests: bool):
     import subprocess
+    print(f"=== general_update({inDir}, {outDir}, {strictTests})")
 
     restoreLocalTestsDir = False
     restorePrsTestsDir = False
@@ -837,20 +839,11 @@ def general_update(inDir, outDir, strictTests):
         shutil.move(os.path.join(inDir, "prs"), outDir)
 
 
-def update_test262(args):
+def update_test262(url: str, branch: str, revision: str, outDir: str, prNumber: str, srcDir: str,
+                   strictTests: bool):
     import subprocess
-
-    url = args.url
-    branch = args.branch
-    revision = args.revision
-    outDir = args.out
-    prNumber = args.pull
-    srcDir = args.local
-
     if not os.path.isabs(outDir):
         outDir = os.path.join(os.getcwd(), outDir)
-
-    strictTests = args.strict
 
     # Download the requested branch in a temporary directory.
     with TemporaryDirectory() as inDir:
@@ -917,6 +910,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Generate additional strict mode tests. Not enabled by default.",
     )
-    parser.set_defaults(func=update_test262)
+    parser.set_defaults()
     args = parser.parse_args()
-    args.func(args)
+    url = args.url
+    branch = args.branch
+    revision = args.revision
+    outDir: str = args.out
+    prNumber = args.pull
+    srcDir = args.local
+    strictTests = args.strict
+    update_test262(url, branch, revision, outDir, prNumber, srcDir, strictTests)

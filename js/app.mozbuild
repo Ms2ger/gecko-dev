@@ -36,3 +36,7 @@ if CONFIG["JS_STANDALONE"] and CONFIG["FUZZING"]:
     DIRS += [
         "/tools/fuzzing/",
     ]
+
+PYTHON_UNITTEST_MANIFESTS += [
+    "/js/src/tests/test/python.toml",
+]

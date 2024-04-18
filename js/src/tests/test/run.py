@@ -25,7 +25,7 @@ def TemporaryDirectory():
     try:
         yield tmpDir
     finally:
-        shutil.rmtree(tmpDir)
+        if False: shutil.rmtree(tmpDir)
 
 
 class TestExport(unittest.TestCase):
@@ -43,6 +43,7 @@ class TestExport(unittest.TestCase):
 
     def importLocal(self):
         with TemporaryDirectory() as cloneDir:
+            print()
             branch = "smTempBranch"
             # Clone Test262 to a local branch
             subprocess.check_call(["git", "clone", "--depth=1", test262Url, cloneDir])
@@ -132,10 +133,12 @@ class TestExport(unittest.TestCase):
         self.assertMultiLineEqual(output.decode("utf-8"), expected)
 
     def tearDown(self):
-        shutil.rmtree(OUT_DIR, ignore_errors=True)
+        if True: shutil.rmtree(OUT_DIR, ignore_errors=True)
 
     def test_export(self):
         result = self.exportScript()
+        print(result["stdout"])
+        print(result["stderr"])
         self.assertEqual(result["returncode"], 0)
         self.compareTrees("export")
 
