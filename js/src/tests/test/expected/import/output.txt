@@ -12,3 +12,9 @@ test/language/export/escaped-from.js
 Renamed files (already added with the new names): 
  rename test/language/export/{escaped-default.js => escaped-foobarbaz.js} (100%)
 
+Missing frontmatter: temp42/baz.js
+No license found in: temp42/baz.js
+Missing frontmatter: temp42/foo.js
+No license found in: temp42/foo.js
+Missing frontmatter: temp42/bar.js
+No license found in: temp42/bar.js
