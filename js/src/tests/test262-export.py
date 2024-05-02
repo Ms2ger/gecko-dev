@@ -13,6 +13,8 @@ from typing import Any, Optional
 
 import yaml
 
+PRINTt = False
+
 # Skip all common files used to support tests for jstests
 # These files are listed in the README.txt
 SUPPORT_FILES = set(
@@ -31,16 +33,24 @@ FRONTMATTER_WRAPPER_PATTERN = re.compile(
 )
 
 
-def convertTestFile(source: bytes, includes: "list[str]") -> bytes:
+def skipTest(source: bytes) -> bool:
+    if b"inTimeZone(" in source:
+        return True
+    if b"getTimeZone(" in source:
+        return True
+    
+    return False
+
+def convertTestFile(source: bytes, includes: "list[str]", testName) -> Optional[bytes]:
     """
     Convert a jstest test to a compatible Test262 test file.
     """
 
+    if skipTest(source):
+        return None
     source = convertReportCompare(source)
-    source = updateMeta(source, includes)
-    source = insertCopyrightLines(source)
-
-    return source
+    source = updateMeta(source, includes, testName)
+    return insertCopyrightLines(source)
 
 
 def convertReportCompare(source: bytes) -> bytes:
@@ -55,8 +65,8 @@ def convertReportCompare(source: bytes) -> bytes:
     """
 
     def replaceFn(matchobj: "re.Match[bytes]") -> bytes:
-        actual: bytes = matchobj.group(2)
-        expected: bytes = matchobj.group(3)
+        actual: bytes = matchobj.group(4)
+        expected: bytes = matchobj.group(5)
 
         if actual == expected and actual in [b"0", b"true", b"null"]:
             return b""
@@ -64,12 +74,12 @@ def convertReportCompare(source: bytes) -> bytes:
         return matchobj.group()
 
     newSource = re.sub(
-        rb".*(if \(typeof reportCompare === \"function\"\)\s*)?reportCompare\s*\(\s*(\w*)\s*,\s*(\w*)\s*(,\s*\S*)?\s*\)\s*;*\s*",
+        rb".*(if \(typeof reportCompare === (\"|')function(\"|')\)\s*)?reportCompare\s*\(\s*(\w*)\s*,\s*(\w*)\s*(,\s*\S*)?\s*\)\s*;*\s*",
         replaceFn,
         source,
     )
 
-    return re.sub(rb"\breportCompare\b", b"assert.sameValue", newSource)
+    return re.sub(rb"\breportCompare\b|\bassertEq\b", b"assert.sameValue", newSource)
 
 
 class ReftestEntry:
@@ -156,8 +166,7 @@ def parseHeader(source: bytes) -> "tuple[bytes, Optional[ReftestEntry]]":
 
     return (source, None)
 
-
-def extractMeta(source: bytes) -> "dict[str, Any]":
+def extractMeta(source: bytes, testName) -> "dict[str, Any]":
     """
     Capture the frontmatter metadata as yaml if it exists.
     Returns a new dict if it doesn't.
@@ -174,7 +183,19 @@ def extractMeta(source: bytes) -> "dict[str, Any]":
     return yaml.safe_load(unindented)
 
 
-def updateMeta(source: bytes, includes: "list[str]") -> bytes:
+def testIncludes(source: bytes) -> "tuple[bytes, list[str]]":
+    includes: list[str] = []
+    source, n = re.subn(rb"\bassertDeepEq\b", b"assert.deepEqual", source)
+    if n:
+        includes.append("deepEqual.js")
+
+    source, n = re.subn(rb"\bassertEqArray\b", b"assert.compareArray", source)
+    if n:
+        includes.append("compareArray.js")
+    return (source, includes)
+
+
+def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
     """
     Captures the reftest meta and a pre-existing meta if any and merge them
     into a single dict.
@@ -184,7 +205,21 @@ def updateMeta(source: bytes, includes: "list[str]") -> bytes:
     source, reftest = parseHeader(source)
 
     # Extract the frontmatter data from the source
-    frontmatter = extractMeta(source)
+    frontmatter = extractMeta(source, testName)
+
+    if testName.endswith("toLocaleString.js"):
+        print(source.startswith(b'"use strict";'))
+        print("----------------")
+        print(source)
+        print("----------------")
+
+
+    if source.startswith(b'"use strict";'):
+        print("setting onlyStrict")
+        frontmatter.setdefault("flags", []).append("onlyStrict")
+
+    source, addincludes = testIncludes(source)
+    includes.extend(addincludes)
 
     # Merge the reftest and frontmatter
     merged = mergeMeta(reftest, frontmatter, includes)
@@ -249,6 +284,13 @@ def mergeMeta(
     if includes:
         frontmatter["includes"] = list(includes)
 
+    flags: list[str] = frontmatter.get("flags", [])
+    if "noStrict" not in flags and "onlyStrict" not in flags:
+        print("adding noStrict")
+        frontmatter.setdefault("flags", []).append("noStrict")
+    else:
+        print("not adding noStrict")
+
     if not reftest:
         return frontmatter
 
@@ -291,13 +333,16 @@ def mergeMeta(
     return frontmatter
 
 
-def insertCopyrightLines(source: bytes) -> bytes:
+def insertCopyrightLines(source: bytes) -> Optional[bytes]:
     """
     Insert the copyright lines into the file.
     """
     from datetime import date
 
     lines: list[bytes] = []
+
+    if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
+        return None
 
     if not re.match(rb"\/\/\s+Copyright.*\. All rights reserved.", source):
         year = date.today().year
@@ -390,6 +435,7 @@ def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[st
 def exportTest262(
     outDir: str, providedSrcs: "list[str]", includeShell: bool, baseDir: str
 ):
+    global PRINTt
     # Create the output directory from scratch.
     print(f"Generating output in {os.path.abspath(outDir)}")
     if os.path.isdir(outDir):
@@ -451,7 +497,16 @@ def exportTest262(
                     print("SKIPPED %s" % testName)
                     continue
 
-                newSource = convertTestFile(testSource, includes)
+
+                if testName.endswith("toLocaleString.js"):
+                    PRINTt = True
+                    print(f"----------------------------------------------{testName}")
+                newSource = convertTestFile(testSource, includes,testName)
+                if testName.endswith("toLocaleString.js"):
+                    PRINTt = False
+                if newSource is None:
+                    print("SKIPPED %s" % testName)
+                    continue
 
                 with open(os.path.join(currentOutDir, fileName), "wb") as output:
                     output.write(newSource)
