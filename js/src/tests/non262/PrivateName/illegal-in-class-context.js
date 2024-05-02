@@ -7,20 +7,8 @@ assertThrowsInstanceOf(
     () => eval(`var x = "foo"; class A { #[x] = 20; }`), SyntaxError);
 
 function assertThrowsWithMessage(f, msg) {
-    var fullmsg;
-    try {
-        f();
-    } catch (exc) {
-        if (exc.message.normalize() === msg.normalize())
-            return;
-
-        fullmsg = `Assertion failed: expected message '${msg}', got '${exc.message}'`;
-    }
-
-    if (fullmsg === undefined)
-        fullmsg = `Assertion failed: expected exception, no exception thrown`;
-
-    throw new Error(fullmsg);
+    assertThrowsInstanceOfWithMessageCheck(f, SyntaxError,
+        message => message.normalize() === msg.normalize());
 }
 
 assertThrowsWithMessage(() => eval(`class A { #x; h(o) { return !#x; }}`),
