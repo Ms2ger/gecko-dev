@@ -7,6 +7,7 @@ var r = /\uD83D\uDC38/ug;
 r.lastIndex = 1;
 var str = "\uD83D\uDC38";
 var result = r.exec(str);
+assert.notSameValue(result, null);
 assertEq(result.length, 1);
 assertEq(result[0], "\uD83D\uDC38");
 
