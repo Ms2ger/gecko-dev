@@ -34,6 +34,8 @@ FRONTMATTER_WRAPPER_PATTERN = re.compile(
 
 
 def skipTest(source: bytes) -> bool:
+    if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
+        return True
     if b"inTimeZone(" in source:
         return True
     if b"getTimeZone(" in source:
@@ -180,7 +182,10 @@ def extractMeta(source: bytes, testName) -> "dict[str, Any]":
 
     unindented = re.sub(b"^%s" % indent, b"", frontmatter_lines)
 
-    return yaml.safe_load(unindented)
+    try:
+        return yaml.safe_load(unindented)
+    except yaml.scanner.ScannerError:
+        return {}
 
 
 def testIncludes(source: bytes) -> "tuple[bytes, list[str]]":
@@ -192,6 +197,10 @@ def testIncludes(source: bytes) -> "tuple[bytes, list[str]]":
     source, n = re.subn(rb"\bassertEqArray\b", b"assert.compareArray", source)
     if n:
         includes.append("compareArray.js")
+
+    source, n = re.subn(rb"\bdetachArrayBuffer\b", b"$DETACHBUFFER", source)
+    if n:
+        includes.append("detachArrayBuffer.js")
     return (source, includes)
 
 
@@ -219,7 +228,7 @@ def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
         frontmatter.setdefault("flags", []).append("onlyStrict")
 
     source, addincludes = testIncludes(source)
-    includes.extend(addincludes)
+    includes = includes + addincludes
 
     # Merge the reftest and frontmatter
     merged = mergeMeta(reftest, frontmatter, includes)
@@ -249,7 +258,7 @@ def cleanupMeta(meta: "dict[str, Any]") -> "dict[str, Any]":
     for tag in ("features", "flags", "includes"):
         if tag in meta:
             # We need the list back for the yaml dump
-            meta[tag] = list(set(meta[tag]))
+            meta[tag] = sorted(set(meta[tag]))
 
     if "negative" in meta:
         # If the negative tag exists, phase needs to be present and set
@@ -340,9 +349,6 @@ def insertCopyrightLines(source: bytes) -> Optional[bytes]:
     from datetime import date
 
     lines: list[bytes] = []
-
-    if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
-        return None
 
     if not re.match(rb"\/\/\s+Copyright.*\. All rights reserved.", source):
         year = date.today().year
@@ -498,12 +504,13 @@ def exportTest262(
                     continue
 
 
-                if testName.endswith("toLocaleString.js"):
-                    PRINTt = True
-                    print(f"----------------------------------------------{testName}")
-                newSource = convertTestFile(testSource, includes,testName)
-                if testName.endswith("toLocaleString.js"):
-                    PRINTt = False
+                try:
+                    newSource = convertTestFile(testSource, includes,testName)
+                except Exception as e:
+                    print("SKIPPED %s" % testName)
+                    print(f"······ error {e}")
+                    continue
+
                 if newSource is None:
                     print("SKIPPED %s" % testName)
                     continue

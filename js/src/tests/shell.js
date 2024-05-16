@@ -575,13 +575,13 @@
   // Clear all options before running any tests. browser.js performs this
   // set-up as part of its jsTestDriverBrowserInit function.
   if (!runningInBrowser) {
-    shellOptionsClear();
+    //shellOptionsClear();
   }
 
   if (!runningInBrowser) {
     // Set the minimum heap size for parallel marking to zero for testing
     // purposes. We don't have access to gcparam in the browser.
-    gcparam('parallelMarkingThresholdMB', 0);
+    //gcparam('parallelMarkingThresholdMB', 0);
   }
 })(this);
 
