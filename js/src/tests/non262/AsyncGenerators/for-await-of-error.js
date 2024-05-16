@@ -3,24 +3,16 @@ var summary = "for-await-of outside of async function should provide better erro
 
 print(BUGNUMBER + ": " + summary);
 
-let caught = false;
-try {
-    eval("for await (let x of []) {}");
-} catch(e) {
-    assertEq(e.message.includes("for await (... of ...) is only valid in"), true);
-    caught = true;
-}
-assertEq(caught, true);
+assertThrownErrorContains(
+    () => eval("for await (let x of []) {}"),
+    "for await (... of ...) is only valid in"
+);
 
 // Extra `await` shouldn't throw that error.
-caught = false;
-try {
-    eval("async function f() { for await await (let x of []) {} }");
-} catch(e) {
-    assertEq(e.message, "missing ( after for");
-    caught = true;
-}
-assertEq(caught, true);
+assertThrownErrorContains(
+    () => eval("async function f() { for await await (let x of []) {} }"),
+    "missing ( after for"
+);
 
 if (typeof reportCompare === "function")
     reportCompare(true, true);
