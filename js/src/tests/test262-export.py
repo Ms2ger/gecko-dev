@@ -40,6 +40,8 @@ def skipTest(source: bytes) -> bool:
         return True
     if b"getTimeZone(" in source:
         return True
+    if b"getAvailableLocalesOf(" in source:
+        return True
     
     return False
 
@@ -188,7 +190,7 @@ def extractMeta(source: bytes, testName) -> "dict[str, Any]":
         return {}
 
 
-def testIncludes(source: bytes) -> "tuple[bytes, list[str]]":
+def testIncludes(source: bytes, testName) -> "tuple[bytes, list[str]]":
     includes: list[str] = []
     source, n = re.subn(rb"\bassertDeepEq\b", b"assert.deepEqual", source)
     if n:
@@ -227,7 +229,7 @@ def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
         print("setting onlyStrict")
         frontmatter.setdefault("flags", []).append("onlyStrict")
 
-    source, addincludes = testIncludes(source)
+    source, addincludes = testIncludes(source, testName)
     includes = includes + addincludes
 
     # Merge the reftest and frontmatter
