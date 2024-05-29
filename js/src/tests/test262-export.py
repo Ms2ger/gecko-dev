@@ -42,7 +42,17 @@ def skipTest(source: bytes) -> bool:
         return True
     if b"getAvailableLocalesOf(" in source:
         return True
-    
+    if b"uneval(" in source:
+        return True
+    if b"Debugger" in source:
+        return True
+    if b"SpecialPowers" in source:
+        return True
+    if b"evalcx(" in source:
+        return True
+    if b"drainJobQueue(" in source:
+        return True
+
     return False
 
 def convertTestFile(source: bytes, includes: "list[str]", testName) -> Optional[bytes]:
@@ -454,6 +464,8 @@ def exportTest262(
     if includeShell:
         os.makedirs(includeDir)
 
+    skipped = 0
+
     # Go through each source path
     for providedSrc in providedSrcs:
         src = os.path.abspath(providedSrc)
@@ -510,17 +522,21 @@ def exportTest262(
                     newSource = convertTestFile(testSource, includes,testName)
                 except Exception as e:
                     print("SKIPPED %s" % testName)
+                    skipped += 1
                     print(f"······ error {e}")
                     continue
 
                 if newSource is None:
                     print("SKIPPED %s" % testName)
+                    skipped += 1
                     continue
 
                 with open(os.path.join(currentOutDir, fileName), "wb") as output:
                     output.write(newSource)
 
                 print("SAVED %s" % testName)
+
+    print(f"Skipped {skipped} tests")
 
 
 if __name__ == "__main__":
