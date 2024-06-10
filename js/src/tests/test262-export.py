@@ -36,9 +36,7 @@ FRONTMATTER_WRAPPER_PATTERN = re.compile(
 def skipTest(source: bytes) -> bool:
     if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
         return True
-    if b"inTimeZone(" in source:
-        return True
-    if b"getTimeZone(" in source:
+    if b"inTimeZone(" in source or b"getTimeZone(" in source or b"setTimeZone(" in source:
         return True
     if b"getAvailableLocalesOf(" in source:
         return True
@@ -51,6 +49,10 @@ def skipTest(source: bytes) -> bool:
     if b"evalcx(" in source:
         return True
     if b"drainJobQueue(" in source:
+        return True
+    if b"displayName(" in source:
+        return True
+    if b"InternalError" in source:
         return True
 
     return False
