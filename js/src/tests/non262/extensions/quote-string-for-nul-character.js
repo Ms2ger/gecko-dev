@@ -6,13 +6,7 @@ function assertStringIncludes(actual, expected) {
 }
 
 function assertErrorMessageIncludes(fn, str) {
-    try {
-        fn();
-    } catch (e) {
-        assertStringIncludes(e.message, str);
-        return;
-    }
-    assertEq(true, false, "missing exception");
+    assertThrownErrorContains(fn, str);
 }
 
 assertErrorMessageIncludes(() => "foo\0bar" in "asdf\0qwertz", "bar");
