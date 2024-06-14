@@ -48,11 +48,31 @@ def skipTest(source: bytes) -> bool:
         return True
     if b"evalcx(" in source:
         return True
-    if b"drainJobQueue(" in source:
+    if b"drainJobQueue(" in source or b"assertEventuallyEq(" in source:
         return True
     if b"displayName(" in source:
         return True
     if b"InternalError" in source:
+        return True
+    if b"toSource(" in source:
+        return True
+    if b"isRope(" in source:
+        return True
+    if b"isSameCompartment(" in source:
+        return True
+    if b"representativeStringArray(" in source:
+        return True
+    if b"largeArrayBufferSupported(" in source:
+        return True
+    if b"helperThreadCount(" in source:
+        return True
+    if b"serialize(" in source or b"deserialize(" in source:
+        return True
+    if b"grayRoot(" in source or b"blackRoot(" in source:
+        return True
+    if b"getSelfHostedValue(" in source:
+        return True
+    if b"oomTest(" in source:
         return True
 
     return False
