@@ -50,6 +50,7 @@ UNSUPPORTED_CODE: list[bytes] = [
     b"displayName(",
     b"InternalError",
     b"toSource(",
+    b"toSource.call("
     b"isRope(",
     b"isSameCompartment(",
     b"representativeStringArray(",
