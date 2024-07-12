@@ -32,48 +32,49 @@ FRONTMATTER_WRAPPER_PATTERN = re.compile(
     rb"/\*\---\n([\s]*)((?:\s|\S)*)[\n\s*]---\*/", flags=re.DOTALL
 )
 
+UNSUPPORTED_CODE: list[bytes] = [
+    b"inTimeZone(",
+    b"getTimeZone(",
+    b"setTimeZone(",
+    b"getAvailableLocalesOf(",
+    b"uneval(",
+    b"Debugger",
+    b"SpecialPowers",
+    b"evalcx(",
+    b"evaluate(",
+    b"drainJobQueue(",
+    b"assertEventuallyEq(",
+    b"assertEventuallyThrows(",
+    b"settlePromiseNow(",
+    b"setPromiseRejectionTrackerCallback",
+    b"displayName(",
+    b"InternalError",
+    b"toSource(",
+    b"isRope(",
+    b"isSameCompartment(",
+    b"representativeStringArray(",
+    b"largeArrayBufferSupported(",
+    b"helperThreadCount(",
+    b"serialize(",
+    b"deserialize(",
+    b"grayRoot(",
+    b"blackRoot(",
+    b"getSelfHostedValue(",
+    b"oomTest(",
+    b"assertLineAndColumn(",
+    b"wrapWithProto(",
+    b"Reflect.parse(",
+    b"relazifyFunctions(",
+    b"ignoreUnhandledRejections",
+]
+
 
 def skipTest(source: bytes) -> bool:
     if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
         return True
-    if b"inTimeZone(" in source or b"getTimeZone(" in source or b"setTimeZone(" in source:
-        return True
-    if b"getAvailableLocalesOf(" in source:
-        return True
-    if b"uneval(" in source:
-        return True
-    if b"Debugger" in source:
-        return True
-    if b"SpecialPowers" in source:
-        return True
-    if b"evalcx(" in source:
-        return True
-    if b"drainJobQueue(" in source or b"assertEventuallyEq(" in source:
-        return True
-    if b"displayName(" in source:
-        return True
-    if b"InternalError" in source:
-        return True
-    if b"toSource(" in source:
-        return True
-    if b"isRope(" in source:
-        return True
-    if b"isSameCompartment(" in source:
-        return True
-    if b"representativeStringArray(" in source:
-        return True
-    if b"largeArrayBufferSupported(" in source:
-        return True
-    if b"helperThreadCount(" in source:
-        return True
-    if b"serialize(" in source or b"deserialize(" in source:
-        return True
-    if b"grayRoot(" in source or b"blackRoot(" in source:
-        return True
-    if b"getSelfHostedValue(" in source:
-        return True
-    if b"oomTest(" in source:
-        return True
+    for c in UNSUPPORTED_CODE:
+        if c in source:
+            return True
 
     return False
 
@@ -260,6 +261,9 @@ def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
     if source.startswith(b'"use strict";'):
         print("setting onlyStrict")
         frontmatter.setdefault("flags", []).append("onlyStrict")
+
+    if b"createIsHTMLDDA" in source:
+        frontmatter.setdefault("flags", []).append("IsHTMLDDA")
 
     source, addincludes = testIncludes(source, testName)
     includes = includes + addincludes
