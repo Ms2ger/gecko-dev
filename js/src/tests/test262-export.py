@@ -33,6 +33,7 @@ FRONTMATTER_WRAPPER_PATTERN = re.compile(
 )
 
 UNSUPPORTED_CODE: list[bytes] = [
+    b"// SKIP test262 export",
     b"inTimeZone(",
     b"getTimeZone(",
     b"setTimeZone(",

@@ -8,5 +8,5 @@ assertThrowsInstanceOfWithMessage(
     },
     TypeError,
     "[][j] is undefined");
-    
+
 reportCompare(0, 0, 'ok');
