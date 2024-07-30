@@ -51,7 +51,7 @@ UNSUPPORTED_CODE: list[bytes] = [
     b"displayName(",
     b"InternalError",
     b"toSource(",
-    b"toSource.call("
+    b"toSource.call(",
     b"isRope(",
     b"isSameCompartment(",
     b"representativeStringArray(",
@@ -68,6 +68,7 @@ UNSUPPORTED_CODE: list[bytes] = [
     b"Reflect.parse(",
     b"relazifyFunctions(",
     b"ignoreUnhandledRejections",
+    b".lineNumber",
 ]
 
 
