@@ -3,6 +3,7 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+// SKIP test262 export
 var gTestfile = "too-many-arguments-constructing-bound-function.js";
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 1303678;

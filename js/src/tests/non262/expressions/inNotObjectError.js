@@ -4,16 +4,22 @@ var summary = 'Error message should provide enough infomation for use of in oper
 print(BUGNUMBER + ": " + summary);
 
 function checkErr(substr, str, messageSubstr, messageStr) {
-    var caught = false;
-    try {
-        substr in str;
-    } catch (e) {
-        caught = true;
-        assertEq(e.message.includes(messageSubstr), true);
-        assertEq(e.message.includes(messageStr), true);
-        assertEq(e.message.length < 100, true);
-    }
-    assertEq(caught, true);
+    assertThrowsInstanceOfWithMessageCheck(
+        () => substr in str,
+        TypeError,
+        message => {
+            if (!message.includes(messageSubstr)) {
+                return `containing "${messageSubstr}"`;
+            }
+            if (!message.includes(messageStr)) {
+                return `containing "${messageStr}"`;
+            }
+            if (message.length >= 100) {
+                return "longer than 100 characters";
+            }
+        },
+        `"${substr}" in "${str}"`
+    );
 }
 
 // These test cases check if long string is omitted properly.

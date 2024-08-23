@@ -114,7 +114,7 @@ def convertReportCompare(source: bytes) -> bytes:
         return matchobj.group()
 
     newSource = re.sub(
-        rb".*(if \(typeof reportCompare === (\"|')function(\"|')\)\s*)?reportCompare\s*\(\s*(\w*)\s*,\s*(\w*)\s*(,\s*\S*)?\s*\)\s*;*\s*",
+        rb".*(if \(typeof reportCompare ===? (\"|')function(\"|')\)\s*)?reportCompare\s*\(\s*(\w*)\s*,\s*(\w*)\s*(,\s*\S*)?\s*\)\s*;*\s*",
         replaceFn,
         source,
     )
