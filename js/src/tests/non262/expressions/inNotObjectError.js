@@ -7,17 +7,10 @@ function checkErr(substr, str, messageSubstr, messageStr) {
     assertThrowsInstanceOfWithMessageCheck(
         () => substr in str,
         TypeError,
-        message => {
-            if (!message.includes(messageSubstr)) {
-                return `containing "${messageSubstr}"`;
-            }
-            if (!message.includes(messageStr)) {
-                return `containing "${messageStr}"`;
-            }
-            if (message.length >= 100) {
-                return "longer than 100 characters";
-            }
-        },
+        message =>
+            message.includes(messageSubstr) &&
+            message.includes(messageStr) &&
+            message.length < 100,
         `"${substr}" in "${str}"`
     );
 }
