@@ -1,4 +1,3 @@
-// NOTE: this file is skipped anyway
 function testName(thisv) {
   var failures = [
     // Not a function
