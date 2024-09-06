@@ -104,6 +104,9 @@
 })();
 
 (function checkCrossCompartmentWrappers() {
+    if (!globalThis.isCCW) {
+        return;
+    }
     var gbl = newGlobal({newCompartment: true});
 
     // the created context object should be wrapped in this compartment

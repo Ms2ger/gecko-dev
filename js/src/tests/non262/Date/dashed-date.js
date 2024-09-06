@@ -1,3 +1,5 @@
+// SKIP test262 export
+
 const tests = [
   // ==== Date only ====
 
