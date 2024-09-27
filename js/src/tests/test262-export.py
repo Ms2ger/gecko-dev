@@ -13,8 +13,6 @@ from typing import Any, Optional
 
 import yaml
 
-PRINTt = False
-
 # Skip all common files used to support tests for jstests
 # These files are listed in the README.txt
 SUPPORT_FILES = set(
@@ -81,7 +79,7 @@ def skipTest(source: bytes) -> bool:
 
     return False
 
-def convertTestFile(source: bytes, includes: "list[str]", testName) -> Optional[bytes]:
+def convertTestFile(source: bytes, includes: "list[str]") -> Optional[bytes]:
     """
     Convert a jstest test to a compatible Test262 test file.
     """
@@ -206,7 +204,7 @@ def parseHeader(source: bytes) -> "tuple[bytes, Optional[ReftestEntry]]":
 
     return (source, None)
 
-def extractMeta(source: bytes, testName) -> "dict[str, Any]":
+def extractMeta(source: bytes) -> "dict[str, Any]":
     """
     Capture the frontmatter metadata as yaml if it exists.
     Returns a new dict if it doesn't.
@@ -221,12 +219,15 @@ def extractMeta(source: bytes, testName) -> "dict[str, Any]":
     unindented = re.sub(b"^%s" % indent, b"", frontmatter_lines)
 
     try:
-        return yaml.safe_load(unindented)
+        result = yaml.safe_load(unindented)
     except yaml.scanner.ScannerError:
         return {}
+    if isinstance(result, str):
+        return { "info": result }
+    return result
 
 
-def testIncludes(source: bytes, testName) -> "tuple[bytes, list[str]]":
+def testIncludes(source: bytes) -> "tuple[bytes, list[str]]":
     includes: list[str] = []
     source, n = re.subn(rb"\bassertDeepEq\b", b"assert.deepEqual", source)
     if n:
@@ -242,7 +243,7 @@ def testIncludes(source: bytes, testName) -> "tuple[bytes, list[str]]":
     return (source, includes)
 
 
-def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
+def updateMeta(source: bytes, includes: "list[str]") -> bytes:
     """
     Captures the reftest meta and a pre-existing meta if any and merge them
     into a single dict.
@@ -252,14 +253,7 @@ def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
     source, reftest = parseHeader(source)
 
     # Extract the frontmatter data from the source
-    frontmatter = extractMeta(source, testName)
-
-    if testName.endswith("toLocaleString.js"):
-        print(source.startswith(b'"use strict";'))
-        print("----------------")
-        print(source)
-        print("----------------")
-
+    frontmatter = extractMeta(source)
 
     if source.startswith(b'"use strict";'):
         print("setting onlyStrict")
@@ -268,7 +262,7 @@ def updateMeta(source: bytes, includes: "list[str]", testName) -> bytes:
     if b"createIsHTMLDDA" in source:
         frontmatter.setdefault("flags", []).append("IsHTMLDDA")
 
-    source, addincludes = testIncludes(source, testName)
+    source, addincludes = testIncludes(source)
     includes = includes + addincludes
 
     # Merge the reftest and frontmatter
@@ -355,9 +349,11 @@ def mergeMeta(
         info = reftest.info
         # Open some space in an existing info text
         if "info" in frontmatter:
-            frontmatter["info"] += "\n\n  \\%s" % info
+            frontmatter["info"] += "\n\n  %s" % info
         else:
             frontmatter["info"] = info
+    if "info" in frontmatter and not frontmatter["info"]:
+        del frontmatter["info"]
 
     # Set the negative flags
     if reftest.error:
@@ -417,13 +413,15 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
         if key in ("description", "info"):
             lines.append(b"%s: |" % key.encode("ascii"))
             lines.append(
-                b"  "
-                + yaml.dump(
+                yaml.dump(
                     value,
                     encoding="utf8",
+                    default_style='|',
+                    default_flow_style=False,
+                    allow_unicode=True,
                 )
                 .strip()
-                .replace(b"\n...", b"")
+                .replace(b"|-\n", b"")
             )
         else:
             lines.append(
@@ -482,7 +480,6 @@ def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[st
 def exportTest262(
     outDir: str, providedSrcs: "list[str]", includeShell: bool, baseDir: str
 ):
-    global PRINTt
     # Create the output directory from scratch.
     print(f"Generating output in {os.path.abspath(outDir)}")
     if os.path.isdir(outDir):
@@ -548,7 +545,7 @@ def exportTest262(
 
 
                 try:
-                    newSource = convertTestFile(testSource, includes,testName)
+                    newSource = convertTestFile(testSource, includes)
                 except Exception as e:
                     print("SKIPPED %s" % testName)
                     skipped += 1

@@ -1,4 +1,6 @@
 // SKIP test262 export
+// Behavior is not currently specified.
+
 // Copies bytes bit-wise if source and target type are the same.
 // Only detectable when using floating point typed arrays.
 const float32Constructors = anyTypedArrayConstructors.filter(isFloatConstructor)

@@ -2,6 +2,7 @@
  * http://creativecommons.org/licenses/publicdomain/ */
 
 // SKIP test262 export
+// Testing unspecified implementation limits.
 
 // Tests for the argumentList argument to Reflect.apply and Reflect.construct.
 // Many arguments can be passed.

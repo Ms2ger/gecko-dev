@@ -1,4 +1,5 @@
 // SKIP test262 export
+// Behavior is not currently specified.
 
 const tests = [
   // ==== Date only ====
