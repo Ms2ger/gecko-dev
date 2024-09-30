@@ -26,9 +26,45 @@ SUPPORT_FILES = set(
     ]
 )
 
+MODELINE_PATTERN = re.compile(rb"/\* -\*- .* -\*- \*/\n+")
+
 FRONTMATTER_WRAPPER_PATTERN = re.compile(
     rb"/\*\---\n([\s]*)((?:\s|\S)*)[\n\s*]---\*/", flags=re.DOTALL
 )
+
+LICENSE_PATTERN = re.compile(
+    rb'// Copyright( \([C]\))? (\w+) .+\. {1,2}All rights reserved\.[\r\n]{1,2}' +
+    rb'(' +
+        rb'// This code is governed by the( BSD)? license found in the LICENSE file\.' +
+        rb'|' +
+        rb'// See LICENSE for details.' +
+        rb'|' +
+        rb'// Use of this source code is governed by a BSD-style license that can be[\r\n]{1,2}' +
+        rb'// found in the LICENSE file\.' +
+        rb'|' +
+        rb'// See LICENSE or https://github\.com/tc39/test262/blob/HEAD/LICENSE' +
+    rb')', re.IGNORECASE)
+
+PD_PATTERN1 = re.compile(
+    rb'/\*[\r\n]{1,2}' +
+    rb' \* Any copyright is dedicated to the Public Domain.[\r\n]{1,2}' +
+    rb' \* http://creativecommon.\.org/licenses/publicdomain/[\r\n]{1,2}' +
+    rb' \*/[\r\n]{1,2}',
+    re.IGNORECASE
+)
+
+PD_PATTERN2 = re.compile(
+    rb'// Any copyright is dedicated to the Public Domain.[\r\n]{1,2}' +
+    rb'// http://creativecommon.\.org/licenses/publicdomain/[\r\n]{1,2}',
+    re.IGNORECASE
+)
+
+PD_TEMPLATE = b"""\
+/*
+ * Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/licenses/publicdomain/
+ */"""
+
 
 UNSUPPORTED_CODE: list[bytes] = [
     b"// SKIP test262 export",
@@ -70,25 +106,48 @@ UNSUPPORTED_CODE: list[bytes] = [
 ]
 
 
-def skipTest(source: bytes) -> bool:
+def dbg(message: Any):
+    if os.environ.get("DEBUG"):
+        print(message)
+
+
+def skipTest(source: bytes) -> Optional[bytes]:
     if b"This Source Code Form is subject to the terms of the Mozilla Public" in source:
-        return True
+        return b"MPL license"
     for c in UNSUPPORTED_CODE:
         if c in source:
-            return True
+            return c
 
-    return False
+    return None
 
-def convertTestFile(source: bytes, includes: "list[str]") -> Optional[bytes]:
+def convertTestFile(source: bytes, includes: "list[str]") -> tuple[bool, bytes]:
     """
     Convert a jstest test to a compatible Test262 test file.
     """
 
-    if skipTest(source):
-        return None
-    source = convertReportCompare(source)
-    source = updateMeta(source, includes, testName)
-    return insertCopyrightLines(source)
+    try:
+        skip = skipTest(source)
+        if skip is not None:
+            return False, skip
+    except:
+        dbg("skipTest failed")
+        raise
+    try:
+        source = convertReportCompare(source)
+    except:
+        dbg("convertReportCompare failed")
+        raise
+    try:
+        source = updateMeta(source, includes)
+    except:
+        dbg("updateMeta failed")
+        raise
+    try:
+        source_ = insertCopyrightLines(source)
+    except:
+        dbg("insertCopyrightLines failed")
+        raise
+    return True, source_
 
 
 def convertReportCompare(source: bytes) -> bytes:
@@ -250,27 +309,37 @@ def updateMeta(source: bytes, includes: "list[str]") -> bytes:
     """
 
     # Extract the reftest data from the source
+    dbg("----parseHeader")
     source, reftest = parseHeader(source)
 
     # Extract the frontmatter data from the source
+    dbg("----extractMeta")
     frontmatter = extractMeta(source)
+    dbg(frontmatter)
 
+    dbg("----use strict")
     if source.startswith(b'"use strict";'):
-        print("setting onlyStrict")
+        dbg("setting onlyStrict")
         frontmatter.setdefault("flags", []).append("onlyStrict")
 
+    dbg("----createIsHTMLDDA")
     if b"createIsHTMLDDA" in source:
-        frontmatter.setdefault("flags", []).append("IsHTMLDDA")
+        frontmatter.setdefault("features", []).append("IsHTMLDDA")
 
+    dbg("----testIncludes")
     source, addincludes = testIncludes(source)
     includes = includes + addincludes
 
     # Merge the reftest and frontmatter
+    dbg("----mergeMeta")
     merged = mergeMeta(reftest, frontmatter, includes)
 
     # Cleanup the metadata
+    dbg("----cleanupMeta")
     properData = cleanupMeta(merged)
+    dbg(f"    properData = {properData}")
 
+    dbg("----insertMeta")
     return insertMeta(source, properData)
 
 
@@ -294,10 +363,12 @@ def cleanupMeta(meta: "dict[str, Any]") -> "dict[str, Any]":
         if tag in meta:
             # We need the list back for the yaml dump
             meta[tag] = sorted(set(meta[tag]))
+            if not len(meta[tag]):
+                del meta[tag]
 
     if "negative" in meta:
         # If the negative tag exists, phase needs to be present and set
-        if meta["negative"].get("phase") not in ("early", "runtime"):
+        if meta["negative"].get("phase") not in ["parse", "resolution", "runtime"]:
             print(
                 "Warning: the negative.phase is not properly set.\n"
                 + "Ref https://github.com/tc39/test262/blob/main/INTERPRETING.md#negative"
@@ -322,6 +393,8 @@ def mergeMeta(
     required frontmatter fields properly.
     """
 
+    dbg(f"    At start of mergeMeta, frontmatter = {frontmatter}")
+
     # Merge the meta from reftest to the frontmatter
 
     # Add the shell specific includes
@@ -330,10 +403,10 @@ def mergeMeta(
 
     flags: list[str] = frontmatter.get("flags", [])
     if "noStrict" not in flags and "onlyStrict" not in flags:
-        print("adding noStrict")
+        dbg("adding noStrict")
         frontmatter.setdefault("flags", []).append("noStrict")
     else:
-        print("not adding noStrict")
+        dbg("not adding noStrict")
 
     if not reftest:
         return frontmatter
@@ -343,6 +416,10 @@ def mergeMeta(
     # Only add the module flag if the value from reftest is truish
     if reftest.module:
         frontmatter.setdefault("flags", []).append("module")
+        if "noStrict" in frontmatter["flags"]:
+            frontmatter["flags"].remove("noStrict")
+        if "onlyStrict" in frontmatter["flags"]:
+            frontmatter["flags"].remove("onlyStrict")
 
     # Add any comments to the info tag
     if reftest.info:
@@ -354,18 +431,19 @@ def mergeMeta(
             frontmatter["info"] = info
     if "info" in frontmatter and not frontmatter["info"]:
         del frontmatter["info"]
+    dbg(f"    After reftest.info, frontmatter = {frontmatter}")
 
     # Set the negative flags
     if reftest.error:
         error = reftest.error
         if "negative" not in frontmatter:
             frontmatter["negative"] = {
-                # This code is assuming error tags are early errors, but they
+                # This code is assuming error tags are parse errors, but they
                 # might be runtime errors as well.
                 # From this point, this code can also print a warning asking to
                 # specify the error phase in the generated code or fill the
                 # phase with an empty string.
-                "phase": "early",
+                "phase": "parse",
                 "type": error,
             }
         # Print a warning if the errors don't match
@@ -379,7 +457,7 @@ def mergeMeta(
     return frontmatter
 
 
-def insertCopyrightLines(source: bytes) -> Optional[bytes]:
+def insertCopyrightLines(source: bytes) -> bytes:
     """
     Insert the copyright lines into the file.
     """
@@ -387,7 +465,7 @@ def insertCopyrightLines(source: bytes) -> Optional[bytes]:
 
     lines: list[bytes] = []
 
-    if not re.match(rb"\/\/\s+Copyright.*\. All rights reserved.", source):
+    if not LICENSE_PATTERN.match(source) and not PD_PATTERN1.match(source) and not PD_PATTERN2.match(source):
         year = date.today().year
         lines.append(
             b"// Copyright (C) %d Mozilla Corporation. All rights reserved." % year
@@ -423,6 +501,12 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
                 .strip()
                 .replace(b"|-\n", b"")
             )
+        elif key == "includes":
+            lines.append(
+                yaml.dump(
+                    {key: value}, encoding="utf8", default_flow_style=True
+                ).strip(b"{}\n")
+            )
         else:
             lines.append(
                 yaml.dump(
@@ -431,13 +515,27 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
             )
 
     lines.append(b"---*/")
+    frontmatterstr = b"\n".join(lines)
 
-    match = FRONTMATTER_WRAPPER_PATTERN.search(source)
 
-    if match:
-        return source.replace(match.group(0), b"\n".join(lines))
+    if frontmattermatch := FRONTMATTER_WRAPPER_PATTERN.search(source):
+        source = source.replace(frontmattermatch.group(0), frontmatterstr)
+    elif bsdmatch := LICENSE_PATTERN.search(source):
+        idx = bsdmatch.span()[1]
+        source = source[:idx] + b"\n" + frontmatterstr + source[idx:]
+    elif pdmatch := PD_PATTERN1.search(source) or PD_PATTERN2.search(source):
+        before, after = pdmatch.span()
+        source = source[:before] + PD_TEMPLATE + b"\n" + frontmatterstr + b"\n" + source[after:]
     else:
-        return b"\n".join(lines) + source
+        source = frontmatterstr + b"\n" + source
+
+    if modelinematch := MODELINE_PATTERN.match(source):
+        source = source[modelinematch.span()[1]:]
+
+    if frontmatter.get("negative", {}).get("phase", "") == "parse":
+        source += b"$DONOTEVALUATE();\n"
+
+    return source
 
 
 def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[str]":
@@ -545,20 +643,20 @@ def exportTest262(
 
 
                 try:
-                    newSource = convertTestFile(testSource, includes)
+                    converted = convertTestFile(testSource, includes)
                 except Exception as e:
-                    print("SKIPPED %s" % testName)
+                    print("SKIPPED %s due to error" % testName)
                     skipped += 1
                     print(f"······ error {e}")
                     continue
 
-                if newSource is None:
-                    print("SKIPPED %s" % testName)
+                if not converted[0]:
+                    print(f"SKIPPED {testName} because file contains {converted[1].decode('ascii')}")
                     skipped += 1
                     continue
 
                 with open(os.path.join(currentOutDir, fileName), "wb") as output:
-                    output.write(newSource)
+                    output.write(converted[1])
 
                 print("SAVED %s" % testName)
 
