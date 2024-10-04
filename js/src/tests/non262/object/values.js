@@ -10,57 +10,57 @@ if ("values" in Object) {
 
     o = { a: 3, b: 2 };
     values = Object.values(o);
-    assertDeepEq(values, [3, 2]);
+    assert.compareArray(values, [3, 2]);
 
     o = { get a() { return 17; }, b: 2 };
     values = Object.values(o),
-    assertDeepEq(values, [17, 2]);
+    assert.compareArray(values, [17, 2]);
 
     o = { __iterator__: function() { throw new Error("non-standard __iterator__ called?"); } };
     values = Object.values(o);
-    assertDeepEq(values, [o.__iterator__]);
+    assert.compareArray(values, [o.__iterator__]);
 
     o = { a: 1, b: 2 };
     delete o.a;
     o.a = 3;
     values = Object.values(o);
-    assertDeepEq(values, [2, 3]);
+    assert.compareArray(values, [2, 3]);
 
     o = [0, 1, 2];
     values = Object.values(o);
-    assertDeepEq(values, [0, 1, 2]);
+    assert.compareArray(values, [0, 1, 2]);
 
     o = /./.exec("abc");
     values = Object.values(o);
-    assertDeepEq(values, ["a", 0, "abc", undefined]);
+    assert.compareArray(values, ["a", 0, "abc", undefined]);
 
     o = { a: 1, b: 2, c: 3 };
     delete o.b;
     o.b = 5;
     values = Object.values(o);
-    assertDeepEq(values, [1, 3, 5]);
+    assert.compareArray(values, [1, 3, 5]);
 
     function f() { }
     f.prototype.p = 1;
     o = new f();
     o.g = 1;
     values = Object.values(o);
-    assertDeepEq(values, [1]);
+    assert.compareArray(values, [1]);
 
     var o = {get a() {delete this.b; return 1}, b: 2, c: 3};
     values = Object.values(o);
-    assertDeepEq(values, [1, 3]);
+    assert.compareArray(values, [1, 3]);
 
     assertThrowsInstanceOf(() => Object.values(), TypeError);
     assertThrowsInstanceOf(() => Object.values(undefined), TypeError);
     assertThrowsInstanceOf(() => Object.values(null), TypeError);
 
-    assertDeepEq(Object.values(1), []);
-    assertDeepEq(Object.values(true), []);
+    assert.compareArray(Object.values(1), []);
+    assert.compareArray(Object.values(true), []);
     if (typeof Symbol === "function")
-        assertDeepEq(Object.values(Symbol("foo")), []);
+        assert.compareArray(Object.values(Symbol("foo")), []);
 
-    assertDeepEq(Object.values("foo"), ["f", "o", "o"]);
+    assert.compareArray(Object.values("foo"), ["f", "o", "o"]);
 
     values = Object.values({
         get a(){
@@ -69,7 +69,7 @@ if ("values" in Object) {
         },
         b: "B"
     });
-    assertDeepEq(values, ["A"]);
+    assert.compareArray(values, ["A"]);
 
     let ownKeysCallCount = 0;
     let getOwnPropertyDescriptorCalls = [];
@@ -86,8 +86,8 @@ if ("values" in Object) {
     });
     values = Object.values(o);
     assertEq(ownKeysCallCount, 1);
-    assertDeepEq(values, [3, 1]);
-    assertDeepEq(getOwnPropertyDescriptorCalls, ["c", "a"]);
+    assert.compareArray(values, [3, 1]);
+    assert.compareArray(getOwnPropertyDescriptorCalls, ["c", "a"]);
 }
 
 if (typeof reportCompare === "function")
