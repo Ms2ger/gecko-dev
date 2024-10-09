@@ -584,4 +584,4 @@ if (!globalThis.Test262Error) {
     };
   })();
 
-})(this);
+})(globalThis);
