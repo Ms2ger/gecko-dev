@@ -34,7 +34,7 @@ if (typeof newGlobal === "function") {
             taintLengthProperty(source);
 
             // Called with wrapped typed array, array buffer already detached.
-            otherGlobal.detachArrayBuffer(source.buffer);
+            detachArrayBuffer(source.buffer);
             assertThrowsInstanceOf(() => target.set(source), TypeError);
 
             var source = new otherGlobal[TA.name](1);
@@ -44,7 +44,7 @@ if (typeof newGlobal === "function") {
             // processing offset parameter.
             var offset = {
                 valueOf() {
-                    otherGlobal.detachArrayBuffer(source.buffer);
+                    detachArrayBuffer(source.buffer);
                     return 0;
                 }
             };
@@ -59,7 +59,7 @@ if (typeof newGlobal === "function") {
             taintLengthProperty(source);
 
             // Called with wrapped typed array, array buffer already detached.
-            otherGlobal.detachArrayBuffer(source.buffer);
+            detachArrayBuffer(source.buffer);
             assertThrowsInstanceOf(() => target.set(source), TypeError);
 
             var source = new TA(new otherGlobal.ArrayBuffer(1 * TA.BYTES_PER_ELEMENT));
@@ -69,7 +69,7 @@ if (typeof newGlobal === "function") {
             // processing offset parameter.
             var offset = {
                 valueOf() {
-                    otherGlobal.detachArrayBuffer(source.buffer);
+                    detachArrayBuffer(source.buffer);
                     return 0;
                 }
             };

@@ -12,7 +12,7 @@ function* createBuffers(lengths = [0, 8]) {
 
     for (let length of lengths) {
         let buffer = new otherGlobal.ArrayBuffer(length);
-        yield {buffer, detach: () => otherGlobal.detachArrayBuffer(buffer)};
+        yield {buffer, detach: () => detachArrayBuffer(buffer)};
     }
 }
 
