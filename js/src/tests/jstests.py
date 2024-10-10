@@ -410,7 +410,13 @@ def parse_args():
             op.error("missing JS_SHELL argument")
         options.js_shell = os.path.abspath(args.pop(0))
 
-    requested_paths = set(args)
+    def strip_prefix(path: str):
+        prefix = "js/src/tests/"
+        if path.startswith(prefix):
+            return path[len(prefix) :]
+        return path
+
+    requested_paths = set(strip_prefix(a) for a in args)
 
     # Valgrind, gdb, and rr are mutually exclusive.
     if sum(map(bool, (options.valgrind, options.debug, options.rr))) > 1:
