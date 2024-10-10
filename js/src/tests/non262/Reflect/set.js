@@ -115,8 +115,11 @@ assertEq(log, "sp");
 // When calling a cross-compartment wrapper, receiver is rewrapped for the
 // target compartment.
 var g = newGlobal();
+// necessary in the browser
+if (!("assert" in g))
+    g.assert = assert;
 if (!("assertEq" in g))
-    g.assertEq = assertEq;  // necessary in the browser
+    g.assertEq = assertEq;
 g.eval(`
      var hits;
      var obj = {
