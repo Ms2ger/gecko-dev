@@ -532,6 +532,7 @@ def insertMeta(source: bytes, frontmatter: "dict[str, Any]") -> bytes:
 
 def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[str]":
     relPath = os.path.relpath(dirPath, baseDir)
+    print(f"findAndCopyIncludes: dirPath = {dirPath} baseDir = {baseDir} relPath = {relPath}")
     includes: list[str] = []
 
     # Recurse down all folders in the relative path until
@@ -541,16 +542,14 @@ def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[st
         # find the shell.js
         shellFile = os.path.join(baseDir, relPath, "shell.js")
 
-        # create new shell.js file name
-        includeFileName = relPath.replace("/", "-") + "-shell.js"
-        includesPath = os.path.join(includeDir, includeFileName)
-
-        if os.path.exists(shellFile):
-            # if the file exists, include in includes
+        # if the file exists and is not empty, include in includes
+        if os.path.exists(shellFile) and os.path.getsize(shellFile) > 0:
+            # create new shell.js file name
+            includeFileName = relPath.replace("/", "-") + "-shell.js"
             includes.append(includeFileName)
 
-            if not os.path.exists(includesPath):
-                shutil.copyfile(shellFile, includesPath)
+            includesPath = os.path.join(includeDir, includeFileName)
+            shutil.copyfile(shellFile, includesPath)
 
         relPath = os.path.split(relPath)[0]
 
