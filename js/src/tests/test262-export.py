@@ -119,8 +119,10 @@ UNSUPPORTED_CODE: list[bytes] = [
     b"helperThreadCount(",
     b"serialize(",
     b"deserialize(",
+    b"clone_object_check",
     b"grayRoot(",
     b"blackRoot(",
+    b"gczeal",
     b"getSelfHostedValue(",
     b"oomTest(",
     b"assertLineAndColumn(",
@@ -534,6 +536,7 @@ def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[st
     relPath = os.path.relpath(dirPath, baseDir)
     print(f"findAndCopyIncludes: dirPath = {dirPath} baseDir = {baseDir} relPath = {relPath}")
     includes: list[str] = []
+    os.makedirs(os.path.join(includeDir, "sm"), exist_ok=True)
 
     # Recurse down all folders in the relative path until
     # we reach the base directory of shell.js include files.
@@ -545,7 +548,7 @@ def findAndCopyIncludes(dirPath: str, baseDir: str, includeDir: str) -> "list[st
         # if the file exists and is not empty, include in includes
         if os.path.exists(shellFile) and os.path.getsize(shellFile) > 0:
             # create new shell.js file name
-            includeFileName = relPath.replace("/", "-") + "-shell.js"
+            includeFileName = "sm/" + relPath.replace("/", "-") + "-shell.js"
             includes.append(includeFileName)
 
             includesPath = os.path.join(includeDir, includeFileName)
